@@ -1,41 +1,43 @@
-# Contributing to ComfyUI
+> 🌐 本文档由 [Comfy-Org/ComfyUI](https://github.com/Comfy-Org/ComfyUI) 翻译,英文原版见原项目。
 
-Welcome, and thank you for your interest in contributing to ComfyUI!
+# 为 ComfyUI 做贡献
 
-There are several ways in which you can contribute, beyond writing code. The goal of this document is to provide a high-level overview of how you can get involved.
+欢迎,感谢你有兴趣为 ComfyUI 做出贡献!
 
-## Asking Questions
+除了编写代码之外,你还可以通过多种方式参与贡献。本文档旨在从宏观层面介绍你可以如何加入我们。
 
-Have a question? Instead of opening an issue, please ask on [Discord](https://comfy.org/discord) or [Matrix](https://app.element.io/#/room/%23comfyui_space%3Amatrix.org) channels. Our team and the community will help you.
+## 提问
 
-## Providing Feedback
+有问题?请不要直接开 issue,而是到 [Discord](https://comfy.org/discord) 或 [Matrix](https://app.element.io/#/room/%23comfyui_space%3Amatrix.org) 频道提问。我们的团队和社区会为你解答。
 
-Your comments and feedback are welcome, and the development team is available via a handful of different channels.
+## 提供反馈
 
-See the `#bug-report`, `#feature-request` and `#feedback` channels on Discord.
+欢迎提出意见和建议,开发团队可以通过多个渠道联系。
 
-## Reporting Issues
+请查看 Discord 上的 `#bug-report`、`#feature-request` 和 `#feedback` 频道。
 
-Have you identified a reproducible problem in ComfyUI? Do you have a feature request? We want to hear about it! Here's how you can report your issue as effectively as possible.
+## 报告问题
 
-
-### Look For an Existing Issue
-
-Before you create a new issue, please do a search in [open issues](https://github.com/comfyanonymous/ComfyUI/issues) to see if the issue or feature request has already been filed.
-
-If you find your issue already exists, make relevant comments and add your [reaction](https://github.com/blog/2119-add-reactions-to-pull-requests-issues-and-comments). Use a reaction in place of a "+1" comment:
-
-* 👍 - upvote
-* 👎 - downvote
-
-If you cannot find an existing issue that describes your bug or feature, create a new issue. We have an issue template in place to organize new issues.
+你发现了 ComfyUI 中一个可复现的问题?你有一个功能需求?我们想听听!下面介绍如何尽可能高效地报告你的问题。
 
 
-### Creating Pull Requests
+### 先查找已有 issue
 
-* Please refer to the article on [creating pull requests](https://github.com/comfyanonymous/ComfyUI/wiki/How-to-Contribute-Code) and contributing to this project.
+在创建新 issue 之前,请先在 [开放 issue](https://github.com/comfyanonymous/ComfyUI/issues) 中搜索,看看该问题或功能请求是否已经被提交过。
+
+如果你发现已有相同 issue,请补充相关评论并添加你的 [表情回应](https://github.com/blog/2119-add-reactions-to-pull-requests-issues-and-comments)。用表情回应代替 "+1" 式的灌水评论:
+
+* 👍 - 支持
+* 👎 - 反对
+
+如果找不到描述你的 bug 或功能需求的已有 issue,就新建一个。我们提供了 issue 模板来规范新 issue 的格式。
 
 
-## Thank You
+### 创建 Pull Request
 
-Your contributions to open source, large or small, make great projects like this possible. Thank you for taking the time to contribute.
+* 请参阅 [创建 pull request](https://github.com/comfyanonymous/ComfyUI/wiki/How-to-Contribute-Code) 及向本项目贡献代码的相关文章。
+
+
+## 致谢
+
+你对开源的贡献,无论大小,都是像这样优秀项目得以存在的基础。感谢你抽出时间参与贡献。

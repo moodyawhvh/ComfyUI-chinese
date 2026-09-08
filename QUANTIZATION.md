@@ -1,15 +1,17 @@
-# The Comfy guide to Quantization
+> 🌐 本文档由 [Comfy-Org/ComfyUI](https://github.com/Comfy-Org/ComfyUI) 翻译,英文原版见原项目。
+
+# Comfy 量化指南
 
 
-## How does quantization work?
+## 量化是如何工作的?
 
-Quantization aims to map a high-precision value x_f to a lower precision format with minimal loss in accuracy. These smaller formats then serve to reduce the models memory footprint and increase throughput by using specialized hardware.
+量化旨在把高精度数值 x_f 以最小的精度损失映射到低精度格式。这些更小的格式可以降低模型的内存占用,并借助专用硬件提升吞吐量。
 
-When simply converting a value from FP16 to FP8 using the round-nearest method we might hit two issues:
-- The dynamic range of FP16 (-65,504, 65,504) far exceeds FP8 formats like E4M3 (-448, 448) or E5M2 (-57,344, 57,344), potentially resulting in clipped values
-- The original values are concentrated in a small range (e.g. -1,1) leaving many FP8-bits "unused"
+单纯用四舍五入方法把数值从 FP16 转到 FP8 时,可能遇到两个问题:
+- FP16 的动态范围 (-65,504, 65,504) 远超 E4M3 (-448, 448) 或 E5M2 (-57,344, 57,344) 等 FP8 格式,可能导致数值被截断
+- 原始数值集中在一个很小的范围(如 -1,1)内,使许多 FP8 位"闲置"
 
-By using a scaling factor, we aim to map these values into the quantized-dtype range, making use of the full spectrum. One of the easiest approaches, and common, is using per-tensor absolute-maximum scaling.
+通过引入缩放因子,我们希望把这些数值映射进量化 dtype 的取值范围,充分利用整个值域。最简单也最常见的做法之一是按张量(per-tensor)绝对值最大值缩放。
 
 ```
 absmax = max(abs(tensor))
@@ -21,13 +23,13 @@ tensor_q = (tensor / scale).to(low_precision_dtype)
 # De-Quantization
 tensor_dq = tensor_q.to(fp16) * scale
 
-tensor_dq ~ tensor
+tensor_dq ~ tensor
 ```
 
-Given that additional information (scaling factor) is needed to "interpret" the quantized values, we describe those as derived datatypes.
+由于需要额外的信息(缩放因子)才能"解读"量化后的数值,我们将其称为派生数据类型。
 
 
-## Quantization in Comfy
+## Comfy 中的量化
 
 ```
 QuantizedTensor (torch.Tensor subclass)
@@ -37,14 +39,14 @@ Two-Level Registry (generic + layout handlers)
 MixedPrecisionOps + Metadata Detection
 ```
 
-### Representation
+### 表示方式
 
-To represent these derived datatypes, ComfyUI uses a subclass of torch.Tensor to implements these using the `QuantizedTensor` class found in `comfy/quant_ops.py`
+为了表达这些派生数据类型,ComfyUI 使用 torch.Tensor 的子类,即 `comfy/quant_ops.py` 中的 `QuantizedTensor` 类来实现。
 
-A `Layout` class defines how a specific quantization format behaves:
-- Required parameters
-- Quantize method
-- De-Quantize method
+`Layout` 类定义了某种特定量化格式的行为方式:
+- 所需参数
+- 量化方法
+- 反量化方法
 
 ```python
 from comfy.quant_ops import QuantizedLayout
@@ -62,10 +64,10 @@ class MyLayout(QuantizedLayout):
         return qdata.to(orig_dtype) * scale
 ```
 
-To then run operations using these QuantizedTensors we use two registry systems to define supported operations. 
-The first is a **generic registry** that handles operations common to all quantized formats (e.g., `.to()`, `.clone()`, `.reshape()`).
+要用这些 QuantizedTensor 执行运算,我们通过两级注册表来定义受支持的操作。
+第一级是**通用注册表**,处理所有量化格式通用的操作(如 `.to()`、`.clone()`、`.reshape()`)。
 
-The second registry is layout-specific and allows to implement fast-paths like nn.Linear.
+第二级注册表与布局(layout)相关,允许实现像 nn.Linear 这样的快速路径。
 ```python
 from comfy.quant_ops import register_layout_op
 
@@ -74,15 +76,15 @@ def my_linear(func, args, kwargs):
     # Extract tensors, call optimized kernel
     ...
 ```
-When `torch.nn.functional.linear()` is called with QuantizedTensor arguments, `__torch_dispatch__` automatically routes to the registered implementation.
-For any unsupported operation, QuantizedTensor will fallback to call `dequantize` and dispatch using the high-precision implementation.
+当 `torch.nn.functional.linear()` 以 QuantizedTensor 作为参数被调用时,`__torch_dispatch__` 会自动路由到已注册的实现。
+对于任何未支持的操作,QuantizedTensor 会回退为调用 `dequantize`,并改用高精度实现来执行。
 
 
-### Mixed Precision
+### 混合精度
 
-The `MixedPrecisionOps` class (lines 542-648 in `comfy/ops.py`) enables per-layer quantization decisions, allowing different layers in a model to use different precisions. This is activated when a model config contains a `layer_quant_config` dictionary that specifies which layers should be quantized and how.
+`MixedPrecisionOps` 类(`comfy/ops.py` 第 542-648 行)支持按层做量化决策,允许模型中不同的层使用不同的精度。当模型配置包含 `layer_quant_config` 字典(指明哪些层需要量化以及如何量化)时,该机制被激活。
 
-**Architecture:**
+**架构:**
 
 ```python
 class MixedPrecisionOps(disable_weight_init):
@@ -90,50 +92,50 @@ class MixedPrecisionOps(disable_weight_init):
     _compute_dtype = torch.bfloat16  # Default compute / dequantize precision
 ```
 
-**Key mechanism:**
+**关键机制:**
 
-The custom `Linear._load_from_state_dict()` method inspects each layer during model loading:
-- If the layer name is **not** in `_layer_quant_config`: load weight as regular tensor in `_compute_dtype`
-- If the layer name **is** in `_layer_quant_config`: 
-  - Load weight as `QuantizedTensor` with the specified layout (e.g., `TensorCoreFP8Layout`)
-  - Load associated quantization parameters (scales, block_size, etc.)
+自定义的 `Linear._load_from_state_dict()` 方法在模型加载时逐层检查:
+- 如果层名**不在** `_layer_quant_config` 中:以 `_compute_dtype` 作为常规张量加载权重
+- 如果层名**在** `_layer_quant_config` 中:
+  - 以指定的布局(如 `TensorCoreFP8Layout`)把权重加载为 `QuantizedTensor`
+  - 同时加载关联的量化参数(scale、block_size 等)
 
-**Why it's needed:**
+**为什么需要它:**
 
-Not all layers tolerate quantization equally. Sensitive operations like final projections can be kept in higher precision, while compute-heavy matmuls are quantized. This provides most of the performance benefits while maintaining quality.
+并非所有层对量化的耐受度都相同。像最终投影(final projection)这类敏感操作可以保持较高精度,而计算密集的矩阵乘法则被量化。这样能在保持质量的同时拿到大部分性能收益。
 
-The system is selected in `pick_operations()` when `model_config.layer_quant_config` is present, making it the highest-priority operation mode.
+当 `model_config.layer_quant_config` 存在时,`pick_operations()` 会选用该系统,使其成为优先级最高的运算模式。
 
 
-## Checkpoint Format
+## Checkpoint 格式
 
-Quantized checkpoints are stored as standard safetensors files with quantized weight tensors and associated scaling parameters, plus a `_quantization_metadata` JSON entry describing the quantization scheme.
+量化 checkpoint 以标准 safetensors 文件存储,包含量化后的权重张量及其关联的缩放参数,外加一个描述量化方案的 `_quantization_metadata` JSON 条目。
 
-The quantized checkpoint will contain the same layers as the original checkpoint but:
-- The weights are stored as quantized values, sometimes using a different storage datatype. E.g. uint8 container for fp8.
-- For each quantized weight a number of additional scaling parameters are stored alongside depending on the recipe.
-- We store a metadata.json in the metadata of the final safetensor containing the `_quantization_metadata` describing which layers are quantized and what layout has been used.
+量化 checkpoint 会包含与原 checkpoint 相同的层,但:
+- 权重以量化值存储,有时使用不同的存储 dtype。例如用 uint8 容器存 fp8。
+- 按照具体方案,每个量化权重旁边会额外存储若干缩放参数。
+- 我们会在最终 safetensor 的元数据中存放一个 metadata.json,其中 `_quantization_metadata` 描述了哪些层被量化以及使用了什么布局。
 
-### Scaling Parameters details
-We define 4 possible scaling parameters that should cover most recipes in the near-future:
-- **weight_scale**: quantization scalers for the weights
-- **weight_scale_2**: global scalers in the context of double scaling
-- **pre_quant_scale**: scalers used for smoothing salient weights
-- **input_scale**: quantization scalers for the activations
+### 缩放参数详情
+我们定义了 4 种缩放参数,应能覆盖近期绝大多数量化方案:
+- **weight_scale**:权重的量化缩放器
+- **weight_scale_2**:双重缩放场景下的全局缩放器
+- **pre_quant_scale**:用于平滑显著权重(salient weights)的缩放器
+- **input_scale**:激活值的量化缩放器
 
-| Format | Storage dtype | weight_scale | weight_scale_2 | pre_quant_scale | input_scale |
+| 格式 | 存储 dtype | weight_scale | weight_scale_2 | pre_quant_scale | input_scale |
 |--------|---------------|--------------|----------------|-----------------|-------------|
 | float8_e4m3fn | float32 | float32 (scalar) | - | - | float32 (scalar) |
 
-You can find the defined formats in `comfy/quant_ops.py` (QUANT_ALGOS).
+已定义的格式可在 `comfy/quant_ops.py`(QUANT_ALGOS)中找到。
 
-### Quantization Metadata
+### 量化元数据
 
-The metadata stored alongside the checkpoint contains:
-- **format_version**: String to define a version of the standard
-- **layers**: A dictionary mapping layer names to their quantization format. The format string maps to the definitions found in `QUANT_ALGOS`. 
+随 checkpoint 一起存储的元数据包含:
+- **format_version**:定义标准版本的字符串
+- **layers**:把层名映射到其量化格式的字典。格式字符串对应 `QUANT_ALGOS` 中的定义。
 
-Example:
+示例:
 ```json
 {
   "_quantization_metadata": {
@@ -148,21 +150,21 @@ Example:
 ```
 
 
-## Creating Quantized Checkpoints
+## 创建量化 Checkpoint
 
-To create compatible checkpoints, use any quantization tool provided the output follows the checkpoint format described above and uses a layout defined in `QUANT_ALGOS`.
+要创建兼容的 checkpoint,可以使用任何量化工具,只要其输出符合上述 checkpoint 格式,并使用 `QUANT_ALGOS` 中定义的布局即可。
 
-### Weight Quantization
+### 权重量化
 
-Weight quantization is straightforward - compute the scaling factor directly from the weight tensor using the absolute maximum method described earlier. Each layer's weights are quantized independently and stored with their corresponding `weight_scale` parameter.
+权重量化很简单——直接用前文所述的绝对值最大值法从权重张量计算缩放因子。每一层的权重独立量化,并与对应的 `weight_scale` 参数一起存储。
 
-### Calibration (for Activation Quantization)
+### 校准(用于激活量化)
 
-Activation quantization (e.g., for FP8 Tensor Core operations) requires `input_scale` parameters that cannot be determined from static weights alone. Since activation values depend on actual inputs, we use **post-training calibration (PTQ)**:
+激活量化(例如用于 FP8 Tensor Core 运算)需要 `input_scale` 参数,它无法仅凭静态权重确定。由于激活值取决于实际输入,我们采用**训练后校准(PTQ)**:
 
-1. **Collect statistics**: Run inference on N representative samples
-2. **Track activations**: Record the absolute maximum (`amax`) of inputs to each quantized layer
-3. **Compute scales**: Derive `input_scale` from collected statistics
-4. **Store in checkpoint**: Save `input_scale` parameters alongside weights
+1. **收集统计信息**:在 N 个有代表性的样本上运行推理
+2. **追踪激活值**:记录每个被量化层的输入绝对值最大值(`amax`)
+3. **计算缩放**:根据收集到的统计信息推导 `input_scale`
+4. **存入 checkpoint**:将 `input_scale` 参数与权重一并保存
 
-The calibration dataset should be representative of your target use case. For diffusion models, this typically means a diverse set of prompts and generation parameters.
+校准数据集应当能代表你的目标使用场景。对扩散模型而言,这通常意味着一组多样化的提示词和生成参数。

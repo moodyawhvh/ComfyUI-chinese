@@ -1,44 +1,46 @@
-# Security Policy
+> 🌐 本文档由 [Comfy-Org/ComfyUI](https://github.com/Comfy-Org/ComfyUI) 翻译,英文原版见原项目。
 
-## Scope
+# 安全策略
 
-ComfyUI is designed to run locally. By default, the server binds to `127.0.0.1`, meaning only the user's own machine can reach it. Our threat model assumes:
+## 范围
 
-- The user installed ComfyUI through a supported channel: the desktop application, the portable build, or a manual install following the README.
-- The user has not installed untrusted custom nodes. Custom nodes are arbitrary Python code and are trusted as much as any other software the user chooses to install.
-- Anyone with access to the ComfyUI URL is trusted (a direct consequence of the localhost-only default).
-- PyTorch and other dependencies are at the versions we ship or recommend in the README.
+ComfyUI 设计为本地运行。默认情况下,服务器绑定到 `127.0.0.1`,即只有用户自己的机器可以访问。我们的威胁模型假设:
 
-A report is in scope only if it affects a user operating within this threat model.
+- 用户通过受支持的渠道安装了 ComfyUI:桌面应用、便携版,或按照 README 手动安装。
+- 用户没有安装不可信的自定义节点。自定义节点就是任意 Python 代码,其可信程度等同于用户选择安装的任何其他软件。
+- 任何能访问 ComfyUI URL 的人都被视为可信(这是默认仅监听 localhost 的直接结果)。
+- PyTorch 及其他依赖处于我们随发行版提供或在 README 中推荐的版本。
 
-## What We Consider a Vulnerability
+只有影响处于上述威胁模型内用户的报告才在受理范围内。
 
-We want to hear about issues where a **reasonable user** — someone who does not install random untrusted nodes and who reads UI prompts and warnings before clicking through them — can be harmed by ComfyUI itself.
+## 我们认为什么算漏洞
 
-The clearest example: a workflow file that such a user might plausibly load and run, using only built-in nodes, that results in **untrusted code execution, arbitrary file read/write outside expected directories, or credential/data exfiltration**.
+我们希望了解这样的情况:**正常理性用户**——不会随手安装来路不明的节点、点击前会认真阅读 UI 提示和警告的用户——会被 ComfyUI 本身造成伤害。
 
-When submitting a report, please include a clear description of *why this is a problem for a typical local ComfyUI user*. Reports without this context are difficult to act on.
+最典型的例子:这类用户合理地加载并运行某个工作流文件,其中只使用内置节点,却导致**不受信任的代码执行、预期目录之外的任意文件读写,或凭据/数据外泄**。
 
-## What We Do Not Consider a Security Vulnerability
+提交报告时,请清楚说明*为什么这对典型的本地 ComfyUI 用户是一个问题*。缺少这一背景的报告很难被处理。
 
-Please report the following through our regular [GitHub issues](https://github.com/comfyanonymous/ComfyUI/issues) instead. Filing them as security reports will likely cause them to be deprioritized or closed.
+## 我们不认为什么算安全漏洞
 
-- **Issues requiring `--listen` or any non-default network exposure.** ComfyUI binds to localhost by default. If a remote attacker needs to reach the server for the attack to work, the user has chosen to expose it and is responsible for securing that deployment (firewall, reverse proxy, authentication, etc.). These are bugs, not vulnerabilities.
-- **`torch.load` and related deserialization issues in old PyTorch versions.** These are upstream PyTorch issues. Our distributions ship with — and our documentation recommends — recent PyTorch versions where these are addressed.
-- **Vulnerabilities that depend on outdated library versions** that we neither ship nor recommend (e.g., requiring PyTorch 2.6 or older).
-- **Issues that require a specific custom node to be installed.** Custom nodes are third-party code. Report these to the maintainer of that node.
-- **Crashes, hangs, or resource exhaustion from a loaded workflow.** Annoying, but not a security issue in our model. File a regular bug.
-- **Social-engineering scenarios** where the user is expected to ignore an explicit UI warning or prompt.
+以下情况请通过常规的 [GitHub issue](https://github.com/comfyanonymous/ComfyUI/issues) 反馈。将其作为安全报告提交,很可能被降级处理或直接关闭。
 
-## Reporting
+- **需要 `--listen` 或任何非默认网络暴露才能成立的报告。** ComfyUI 默认只绑定 localhost。如果攻击需要远程攻击者能访问服务器才能生效,那是用户自己选择暴露服务,应由用户负责该部署的安全加固(防火墙、反向代理、身份认证等)。这些属于 bug,不属于漏洞。
+- **旧版 PyTorch 中 `torch.load` 及相关反序列化问题。** 这些是 PyTorch 上游的问题。我们的发行版附带——文档也推荐使用——已修复此类问题的较新 PyTorch 版本。
+- **依赖过时库版本的漏洞**,而这些版本我们既不随附也不推荐(例如需要 PyTorch 2.6 或更旧版本)。
+- **需要安装特定自定义节点才能成立的报告。** 自定义节点是第三方代码,请向该节点的维护者反馈。
+- **加载工作流导致的崩溃、卡死或资源耗尽。** 确实恼人,但在我们的模型中不属于安全问题,请提交普通 bug。
+- **依赖用户无视明确的 UI 警告或提示的社工场景。**
 
-If you believe you have found an issue that falls within the scope above, please report it privately via GitHub's [Report a vulnerability](https://github.com/comfyanonymous/ComfyUI/security/advisories/new) feature rather than opening a public issue.
+## 报告方式
 
-Please include:
+如果你认为自己发现了上述范围内的安全问题,请通过 GitHub 的 [Report a vulnerability](https://github.com/comfyanonymous/ComfyUI/security/advisories/new) 功能私下报告,而不是开公开 issue。
 
-1. A description of the vulnerability and the affected component.
-2. Reproduction steps, ideally with a minimal workflow file or proof-of-concept.
-3. The ComfyUI version, install method (desktop / portable / manual), and OS.
-4. An explanation of how this affects a typical local user as described in the threat model.
+请包含:
 
-We will acknowledge valid reports and coordinate a fix and disclosure timeline with you.
+1. 漏洞描述及受影响的组件。
+2. 复现步骤,最好附带最小化的工作流文件或概念验证(PoC)。
+3. ComfyUI 版本、安装方式(桌面版 / 便携版 / 手动安装)和操作系统。
+4. 说明该问题如何影响威胁模型中描述的典型本地用户。
+
+我们会确认有效报告,并与你协调修复和披露的时间表。
